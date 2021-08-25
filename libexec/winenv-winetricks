@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# Summary: Install the latest winetricks
+#
+# Usage: winenv winetricks
+#        winenv winetricks --global
+#        winenv winetricks --local
+# Installs the latest winetricks globally or locally (--global by default)
+#
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+if [ -z "$WINENV_ROOT" ]; then
+    WINENV_ROOT="${HOME}/.winenv"
+fi
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+#  echo --local
+#  echo --global
+  exit 0
+fi
+
+usage() {
+  # We can remove the sed fallback once winenv 0.4.0 is widely available.
+  winenv-help install-winetricks 2>/dev/null || sed -ne '/^#/!q;s/.//;s/.//;1,4d;p' < "$0"
+  [ -z "$1" ] || exit "$1"
+}
+
+unset VERBOSE
+
+#opt="$1"
+#case "$opt" in
+#    "" | "--global")
+#        INSTALL_PREFIX="$WINENV_ROOT"
+#    ;;
+#    "--local")
+#        INSTALL_PREFIX="$(winenv-winenv-prefix)"
+#    ;;
+#esac
+
+INSTALL_PREFIX="$(winenv-winenv-prefix)"
+WINENV_WINETRICKS_URL="https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks"
+WINENV_WINETRICKS_OUT="$INSTALL_PREFIX/bin/winetricks"
+
+curl -L "$WINENV_WINETRICKS_URL" -o "$WINENV_WINETRICKS_OUT"
+chmod +x "$WINENV_WINETRICKS_OUT"
+winenv rehash

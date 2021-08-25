@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Summary: Show the current wine version
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+if [ -z "$WINENV_VERSION" ]; then
+  WINENV_VERSION_FILE="$(winenv-version-file)"
+  WINENV_VERSION="$(winenv-version-file-read "$WINENV_VERSION_FILE" || true)"
+fi
+
+if [ -z "$WINENV_VERSION" ] || [ "$WINENV_VERSION" = "system" ]; then
+  echo "system"
+  exit
+fi
+
+version_exists() {
+  local version="$1"
+  [ -d "${WINENV_ROOT}/versions/${version}" ]
+}
+
+if version_exists "$WINENV_VERSION"; then
+  echo "$WINENV_VERSION"
+elif version_exists "${WINENV_VERSION#wine-}"; then
+  { echo "warning: ignoring extraneous \`wine-' prefix in version \`${WINENV_VERSION}'"
+    echo "         (set by $(winenv-version-origin))"
+  } >&2
+  echo "${WINENV_VERSION#wine-}"
+else
+  echo "winenv: version \`$WINENV_VERSION' is not installed" >&2
+  exit 1
+fi

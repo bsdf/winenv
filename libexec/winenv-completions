@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Usage: winenv completions <command> [arg1 arg2...]
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+COMMAND="$1"
+if [ -z "$COMMAND" ]; then
+  winenv-help --usage completions >&2
+  exit 1
+fi
+
+COMMAND_PATH="$(command -v "winenv-$COMMAND" || command -v "winenv-sh-$COMMAND")"
+if grep -i "^\([#%]\|--\|//\) provide winenv completions" "$COMMAND_PATH" >/dev/null; then
+  shift
+  exec "$COMMAND_PATH" --complete "$@"
+fi

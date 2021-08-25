@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -e
+export -n CDPATH
+
+if [ "$1" = "--debug" ]; then
+  export WINENV_DEBUG=1
+  shift
+fi
+
+if [ -n "$WINENV_DEBUG" ]; then
+  export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] '
+  set -x
+fi
+
+read READLINK < <( type -p greadlink readlink ) || {
+  echo "winenv: cannot find readlink - are you missing GNU coreutils?" >&2
+  exit 1
+}
+export READLINK
+
+abs_dirname() {
+  local cwd="$PWD"
+  local path="$1"
+
+  while [ -n "$path" ]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$($READLINK "$name" || true)"
+  done
+
+  pwd
+  cd "$cwd"
+}
+
+if [ -z "${WINENV_ROOT}" ]; then
+  WINENV_ROOT="${HOME}/.winenv"
+else
+  WINENV_ROOT="${WINENV_ROOT%/}"
+fi
+export WINENV_ROOT
+
+if [ -z "${WINENV_DIR}" ]; then
+  WINENV_DIR="$PWD"
+else
+  cd "$WINENV_DIR" 2>/dev/null || {
+    echo "winenv: cannot change working directory to \`$WINENV_DIR'"
+    exit 1
+  } >&2
+  WINENV_DIR="$PWD"
+  cd "$OLDPWD"
+fi
+export WINENV_DIR
+
+
+shopt -s nullglob
+
+bin_path="$(abs_dirname "$0")"
+for plugin_bin in "${WINENV_ROOT}/plugins/"*/bin; do
+  bin_path="${bin_path}:${plugin_bin}"
+done
+export PATH="${bin_path}:${PATH}"
+
+hook_path="${WINENV_HOOK_PATH:+$WINENV_HOOK_PATH:}${WINENV_ROOT}/winenv.d:/usr/local/etc/winenv.d:/etc/winenv.d:/usr/lib/winenv/hooks"
+for plugin_hook in "${WINENV_ROOT}/plugins/"*/etc/winenv.d; do
+  hook_path="${hook_path}:${plugin_hook}"
+done
+export WINENV_HOOK_PATH="$hook_path"
+
+shopt -u nullglob
+
+
+command="$1"
+case "$command" in
+"" | "-h" | "--help" )
+  echo -e "$(winenv---version)\n$(winenv-help)" >&2
+  ;;
+"-v" )
+  exec winenv---version
+  ;;
+* )
+  command_path="$(command -v "winenv-$command" || true)"
+  if [ -z "$command_path" ]; then
+    # if [ "$command" = "install" ]; then
+    #   echo "winenv: Please install perl-build. See https://github.com/tokuhirom/winenv/blob/master/README.md#installation"
+    #   exit 1
+    # else
+      echo "winenv: no such command \`$command'" >&2
+      exit 1
+    # fi
+  fi
+
+  shift 1
+
+  if [ "$command" = "install" ];then
+    system_perl=$(WINENV_VERSION=system winenv-which perl 2> /dev/null || true)
+    if [ "$system_perl" != "" ]; then
+      exec "$system_perl" "$command_path" "$@"
+    fi
+  fi
+
+  exec "$command_path" "$@"
+  ;;
+esac

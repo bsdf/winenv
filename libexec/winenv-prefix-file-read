@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Usage: winenv prefix-file-read <file>
+[ -e "$1" ] && readlink -e "$(cat "$1")"

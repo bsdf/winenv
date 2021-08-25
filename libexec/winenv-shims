@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Summary: List existing winenv shims
+# Usage: winenv shims [--short]
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  echo --short
+  exit
+fi
+
+shopt -s nullglob
+
+for command in "${WINENV_ROOT}/shims/"*; do
+  if [ "$1" = "--short" ]; then
+    echo "${command##*/}"
+  else
+    echo "$command"
+  fi
+done | sort

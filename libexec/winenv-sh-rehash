@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  exec winenv-rehash --complete
+fi
+
+shell="${WINENV_SHELL:-$SHELL}"
+shell="${shell##*/}"
+
+# When winenv shell integration is enabled, delegate to winenv-rehash,
+# then tell the shell to empty its command lookup cache.
+winenv-rehash
+case "$shell" in
+fish)
+  # no rehash support
+  ;;
+* )
+  echo "hash -r 2>/dev/null || true"
+  ;;
+esac

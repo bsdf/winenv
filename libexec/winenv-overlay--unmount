@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#
+# Summary: Install the latest winetricks
+#
+# Usage: winenv winetricks
+#        winenv winetricks --global
+#        winenv winetricks --local
+# Installs the latest winetricks globally or locally (--global by default)
+#
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+if [ -z "$WINENV_ROOT" ]; then
+    WINENV_ROOT="${HOME}/.winenv"
+fi
+
+# Provide winenv completions
+if [ "$1" = "--complete" ] || [ "$1" = "--list" ]; then
+    if [ "$1" = "--complete" ]; then
+        echo "--list"
+        echo "--all"
+    fi
+
+    exec findmnt -n -t fuse.fuse-overlayfs -o TARGET
+    exit 0
+fi
+
+# winenv overlay unmount    [prefix]
+# winenv overlay unmount    --all (default?)
+# how to determine if something is mounted? and get mountpoint?
+
+case "$1" in
+    "--all" )
+        echo "not implemented"
+    ;;
+
+    *)
+        [ -e "$1" ] && umount "$1"
+    ;;
+esac

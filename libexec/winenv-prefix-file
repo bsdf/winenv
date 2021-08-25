@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Summary: Detect the file that sets the current winenv prefix
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+find_local_prefix_file() {
+  local root="$1"
+  while [ -n "$root" ]; do
+    if [ -e "${root}/.wine-prefix" ]; then
+      echo "${root}/.wine-prefix"
+      exit
+    elif [ -e "${root}/.winenv-prefix" ]; then
+      echo "${root}/.winenv-prefix"
+      exit
+    fi
+    root="${root%/*}"
+  done
+}
+
+find_local_prefix_file "$WINENV_DIR"
+[ "$WINENV_DIR" = "$PWD" ] || find_local_prefix_file "$PWD"
+
+global_prefix_file="${WINENV_ROOT}/prefix"
+
+if [ -e "$global_prefix_file" ]; then
+  echo "$global_prefix_file"
+elif [ -e "${WINENV_ROOT}/global" ]; then
+  echo "${WINENV_ROOT}/global"
+elif [ -e "${WINENV_ROOT}/default" ]; then
+  echo "${WINENV_ROOT}/default"
+else
+  echo "$global_prefix_file"
+fi

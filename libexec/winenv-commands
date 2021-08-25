@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Summary: List all available winenv commands
+# Usage: winenv commands [--sh|--no-sh]
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+case "$1" in
+--complete ) # Provide winenv completions
+  echo --sh
+  echo --no-sh
+  echo --no-winenv
+  exit
+  ;;
+--sh )
+  sh=1
+  ;;
+--no-sh )
+  nosh=1
+  ;;
+--no-winenv )
+  nowinenv=1
+  ;;
+esac
+
+
+IFS=: paths=($PATH)
+
+shopt -s nullglob
+
+{ for path in "${paths[@]}"; do
+    for command in "${path}/winenv-"*; do
+      command="${command#*winenv-}"
+      case "$command" in
+           sh-*) [ -n "$nosh"    ] && continue ;;
+        winenv-*) [ -n "$nowinenv" ] && continue ;;
+              *) [ -n "$sh"      ] && continue ;;
+      esac
+      echo ${command}
+    done
+  done
+} | sort -u

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Usage: winenv prefix-file-write <file> <prefix>
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+WINENV_PREFIX_FILE="$1"
+WINENV_PREFIX="$2"
+
+if [ -z "$WINENV_PREFIX" ] || [ -z "$WINENV_PREFIX_FILE" ]; then
+  winenv-help --usage prefix-file-write >&2
+  exit 1
+fi
+
+# Write the prefix out to disk.
+echo "$WINENV_PREFIX" > "$WINENV_PREFIX_FILE"

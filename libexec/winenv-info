@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# Summary: Show info about wine
+#
+# Usage: winenv info
+#
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+if [ -z "$WINENV_ROOT" ]; then
+    WINENV_ROOT="${HOME}/.winenv"
+fi
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+    exit 0
+fi
+
+echo "version: $(winenv-version-name) (set by $(winenv-version-origin))"
+echo "prefix:  $(winenv-prefix-name) (set by $(winenv-prefix-origin))"

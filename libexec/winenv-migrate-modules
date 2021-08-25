@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+#
+# Summary: Migrate cpan modules from other version
+#
+# Usage: winenv migrate-modules <from> <to>
+#
+#  -n: Do not run test cases while installing by cpanm
+#
+# See `winenv versions` for a complete list of installed versions.
+#
+
+set -e
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  exec winenv versions --bare
+fi
+
+if [ -z "$WINENV_ROOT" ]; then
+  WINENV_ROOT="${HOME}/.winenv"
+fi
+
+no_test=""
+for args in "$@"
+do
+  if [ "$args" = "-n" ]; then
+    no_test="-n"
+    shift
+  fi
+done
+
+FROM="$1"
+case "$FROM" in
+"" | -* )
+  # We can remove the sed fallback once winenv 0.4.0 is widely available.
+  { winenv-help migrate-modules 2>/dev/null ||
+    sed -ne '/^#/!q;s/.\{1,2\}//;1,4d;p' < "$0"
+  } >&2
+  exit 1
+  ;;
+esac
+
+TO="$2"
+case "$TO" in
+"" | -* )
+  # We can remove the sed fallback once winenv 0.4.0 is widely available.
+  { winenv-help migrate-modules 2>/dev/null ||
+    sed -ne '/^#/!q;s/.\{1,2\}//;1,4d;p' < "$0"
+  } >&2
+  exit 1
+  ;;
+esac
+
+echo "Migrating $FROM to $TO"
+
+WINENV_VERSION=$TO winenv install-cpanm
+WINENV_VERSION=$FROM perl -MExtUtils::Installed -e 'for (ExtUtils::Installed->new(skip_cwd => 1)->modules) {next if /\APerl\z/; print $_, "\n";}' | WINENV_VERSION=$TO cpanm $no_test --mirror-only
+WINENV_VERSION=$TO winenv rehash

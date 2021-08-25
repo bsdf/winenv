@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Summary: Explain how the current wine prefix is set
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+if [ -n "$WINENV_PREFIX" ]; then
+  echo "WINENV_PREFIX environment variable"
+else
+  winenv-prefix-file
+fi

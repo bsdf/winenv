@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# Summary: List cpan modules in current perl
+#
+# Usage: winenv list-modules
+#
+
+set -e
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  exec winenv versions --bare
+fi
+
+if [ -z "$WINENV_ROOT" ]; then
+  WINENV_ROOT="${HOME}/.winenv"
+fi
+
+winenv exec perl -MExtUtils::Installed -e 'print "$_$/" for grep $_ ne "Perl", ExtUtils::Installed->new(skip_cwd => 1)->modules'

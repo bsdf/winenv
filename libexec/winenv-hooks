@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Summary: List hook scripts for a given winenv command
+# Usage: winenv hooks <command>
+
+set -e
+[[ -n "$WINENV_DEBUG" ]] && set -x
+
+# Provide winenv completions
+if [[ "$1" = "--complete" ]]; then
+  echo exec
+  echo rehash
+  echo which
+  exit
+fi
+
+WINENV_COMMAND="$1"
+if [[ -z "$WINENV_COMMAND" ]]; then
+  winenv-help --usage hooks >&2
+  exit 1
+fi
+
+realpath() {
+  local cwd="$PWD"
+  local path="$1"
+
+  while [[ -n "$path" ]]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$($READLINK "$name" || true)"
+  done
+
+  echo "$PWD/$name"
+  cd "$cwd"
+}
+
+IFS=: hook_paths=($WINENV_HOOK_PATH)
+
+shopt -s nullglob
+for path in "${hook_paths[@]}"; do
+  for script in "$path/$WINENV_COMMAND"/*.bash; do
+    realpath "$script"
+  done
+done
+shopt -u nullglob

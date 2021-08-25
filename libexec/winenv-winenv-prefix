@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Summary: Display prefix for a Wine version
+# Usage: winenv winenv-prefix [<version>]
+#
+# Displays the directory where a Wine version is installed. If no
+# version is given, `winenv winenv-prefix' displays the location of the
+# currently selected version.
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  echo system
+  exec winenv-versions --bare
+fi
+
+if [ -n "$1" ]; then
+  export WINENV_VERSION="$1"
+elif [ -z "$WINENV_VERSION" ]; then
+  WINENV_VERSION="$(winenv-version-name)"
+fi
+
+if [ "$WINENV_VERSION" = "system" ]; then
+  WINE_PATH="$(winenv-which wine)"
+  WINE_PATH="${WINE_PATH%/*}"
+  echo "${WINE_PATH%/bin}"
+  exit
+fi
+
+WINENV_PREFIX_PATH="${WINENV_ROOT}/versions/${WINENV_VERSION}"
+if [ ! -d "$WINENV_PREFIX_PATH" ]; then
+  echo "winenv: version \`${WINENV_VERSION}' not installed" >&2
+  exit 1
+fi
+
+echo "$WINENV_PREFIX_PATH"

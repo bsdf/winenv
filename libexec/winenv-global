@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the global wine version
+#
+# Usage: winenv global <version>
+#
+# Sets the global wine version. You can override the global version at
+# any time by setting a directory-specific version with `winenv local'
+# or by setting the `WINENV_VERSION' environment variable.
+#
+# <version> should be a string matching a wine version known to winenv.
+# The special version string `system' will use your default system wine.
+# Run `winenv versions' for a list of available wine versions.
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  echo system
+  exec winenv-versions --bare
+fi
+
+WINENV_VERSION="$1"
+WINENV_VERSION_FILE="${WINENV_ROOT}/version"
+
+if [ -n "$WINENV_VERSION" ]; then
+  winenv-version-file-write "$WINENV_VERSION_FILE" "$WINENV_VERSION"
+else
+  winenv-version-file-read "$WINENV_VERSION_FILE" ||
+  winenv-version-file-read "${WINENV_ROOT}/global" ||
+  winenv-version-file-read "${WINENV_ROOT}/default" ||
+  echo system
+fi

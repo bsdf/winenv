@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#
+# Summary: Run an executable with the selected Perl version
+#
+# Usage: winenv exec <command> [arg1 arg2...]
+#
+# Runs an executable by first preparing PATH so that the selected Perl
+# version's `bin' directory is at the front.
+#
+# For example, if the currently selected Perl version is 5.18.0:
+#   winenv exec carton install
+#
+# is equivalent to:
+#   PATH="$WINENV_ROOT/versions/5.18.0/bin:$PATH" carton install
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  exec winenv shims --short
+fi
+
+WINENV_VERSION="$(winenv-version-name)"
+WINENV_PREFIX="$(winenv-prefix-name)"
+WINENV_COMMAND="$1"
+
+if [ -z "$WINENV_COMMAND" ]; then
+  winenv-help --usage exec >&2
+  exit 1
+fi
+
+export WINENV_VERSION
+WINENV_COMMAND_PATH="$(winenv-which "$WINENV_COMMAND")"
+WINENV_BIN_PATH="${WINENV_COMMAND_PATH%/*}"
+
+OLDIFS="$IFS"
+IFS=$'\n' scripts=(`winenv-hooks exec`)
+IFS="$OLDIFS"
+for script in "${scripts[@]}"; do
+  source "$script"
+done
+
+shift 1
+if [ "$WINENV_VERSION" != "system" ]; then
+  export PATH="${WINENV_BIN_PATH}:${PATH}"
+fi
+
+if [ -e "$WINENV_PREFIX" ]; then
+  export WINEPREFIX="$WINENV_PREFIX"
+fi
+
+exec -a "$WINENV_COMMAND" "$WINENV_COMMAND_PATH" "$@"

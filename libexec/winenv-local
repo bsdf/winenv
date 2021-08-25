@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the local application-specific Wine version
+#
+# Usage: winenv local <version>
+#        winenv local --unset
+#
+# Sets the local application-specific Wine version by writing the
+# version name to a file named `.wine-version'.
+#
+# When you run a Wine command, winenv will look for a `.wine-version'
+# file in the current directory and each parent directory. If no such
+# file is found in the tree, winenv will use the global Wine version
+# specified with `winenv global'. A version specified with the
+# `WINENV_VERSION' environment variable takes precedence over local
+# and global versions.
+#
+# For backwards compatibility, winenv will also read version
+# specifications from `.winenv-version' files, but a `.wine-version'
+# file in the same directory takes precedence.
+#
+# <version> should be a string matching a Wine version known to winenv.
+# The special version string `system' will use your default system Wine.
+# Run `winenv versions' for a list of available Wine versions.
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  echo --unset
+  echo system
+  exec winenv-versions --bare
+fi
+
+WINENV_VERSION="$1"
+
+if [ "$WINENV_VERSION" = "--unset" ]; then
+  command -p rm -f .wine-version .winenv-version
+elif [ -n "$WINENV_VERSION" ]; then
+  previous_file="$(WINENV_VERSION= winenv-version-origin || true)"
+  winenv-version-file-write .wine-version "$WINENV_VERSION"
+  if [ "$previous_file" -ef .winenv-version ]; then
+    command -p rm -f .winenv-version
+    { echo "winenv: removed existing \`.winenv-version' file and migrated"
+      echo "       local version specification to \`.wine-version' file"
+    } >&2
+  fi
+else
+  winenv-version-file-read .wine-version ||
+  winenv-version-file-read .winenv-version ||
+  { echo "winenv: no local version configured for this directory"
+    exit 1
+  } >&2
+fi

@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#
+# Summary: Set or show the local application-specific Wine prefix
+#
+# Usage: winenv local <prefix>
+#        winenv local --unset
+#
+# Sets the local application-specific Wine prefix by writing the
+# prefix name to a file named `.wine-prefix'.
+#
+# When you run a Wine command, winenv will look for a `.wine-prefix'
+# file in the current directory and each parent directory. If no such
+# file is found in the tree, winenv will use the global Wine prefix
+# specified with `winenv global'. A prefix specified with the
+# `WINENV_PREFIX' environment variable takes precedence over local
+# and global prefixes.
+#
+# For backwards compatibility, winenv will also read prefix
+# specifications from `.winenv-prefix' files, but a `.wine-prefix'
+# file in the same directory takes precedence.
+#
+# <prefix> should be a string matching a Wine prefix known to winenv.
+# The special prefix string `system' will use your default system Wine.
+# Run `winenv prefixes' for a list of available Wine prefixes.
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+   exit 0
+fi
+
+WINENV_PREFIX="$($READLINK -f "$1")"
+
+if [ "$WINENV_PREFIX" = "--unset" ]; then
+  command -p rm -f .wine-prefix .winenv-prefix
+elif [ -n "$WINENV_PREFIX" ]; then
+  previous_file="$(WINENV_PREFIX= winenv-prefix-origin || true)"
+  winenv-prefix-file-write .wine-prefix "$WINENV_PREFIX"
+  if [ "$previous_file" -ef .winenv-prefix ]; then
+    command -p rm -f .winenv-prefix
+    { echo "winenv: removed existing \`.winenv-prefix' file and migrated"
+      echo "       local prefix specification to \`.wine-prefix' file"
+    } >&2
+  fi
+else
+  winenv-prefix-file-read .wine-prefix ||
+  winenv-prefix-file-read .winenv-prefix ||
+  { echo "winenv: no local prefix configured for this directory"
+    exit 1
+  } >&2
+fi

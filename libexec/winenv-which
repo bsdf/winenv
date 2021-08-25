@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+#
+# Summary: Display the full path to an executable
+#
+# Usage: winenv which <command>
+#
+# Displays the full path to the executable that winenv will invoke when
+# you run the given command.
+
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+  exec winenv shims --short
+fi
+
+expand_path() {
+  if [ ! -d "$1" ]; then
+    return 1
+  fi
+
+  local cwd="$PWD"
+  cd "$1"
+  pwd
+  cd "$cwd"
+}
+
+remove_from_path() {
+  local path_to_remove="$(expand_path "$1")"
+  local result=""
+
+  if [ -z "$path_to_remove" ]; then
+    echo "${PATH}"
+    return
+  fi
+
+  local paths
+  IFS=: paths=($PATH)
+
+  for path in "${paths[@]}"; do
+    path="$(expand_path "$path" || true)"
+    if [ -n "$path" ] && [ "$path" != "$path_to_remove" ]; then
+      result="${result}${path}:"
+    fi
+  done
+
+  echo "${result%:}"
+}
+
+WINENV_VERSION="$(winenv-version-name)"
+WINENV_COMMAND="$1"
+
+if [ -z "$WINENV_COMMAND" ]; then
+  winenv-help --usage which >&2
+  exit 1
+fi
+
+if [ "$WINENV_VERSION" = "system" ]; then
+  PATH="$(remove_from_path "${WINENV_ROOT}/shims")"
+  WINENV_COMMAND_PATH="$(command -v "$WINENV_COMMAND" || true)"
+else
+  WINENV_COMMAND_PATH="${WINENV_ROOT}/versions/${WINENV_VERSION}/bin/${WINENV_COMMAND}"
+fi
+
+OLDIFS="$IFS"
+IFS=$'\n' scripts=(`winenv-hooks which`)
+IFS="$OLDIFS"
+for script in "${scripts[@]}"; do
+  source "$script"
+done
+
+if [ -x "$WINENV_COMMAND_PATH" ]; then
+  echo "$WINENV_COMMAND_PATH"
+else
+  echo "winenv: $WINENV_COMMAND: command not found" >&2
+
+  versions="$(winenv-whence "$WINENV_COMMAND" || true)"
+  if [ -n "$versions" ]; then
+    { echo
+      echo "The \`$1' command exists in these wine versions:"
+      echo "$versions" | sed 's/^/  /g'
+      echo
+    } >&2
+  fi
+
+  exit 127
+fi

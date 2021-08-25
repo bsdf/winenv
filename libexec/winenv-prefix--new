@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Summary: Show the current wine prefix
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+   exit 0
+fi 
+
+# set WINEPREFIX
+# save .wine-prefix
+
+
+
+
+
+if [ -z "$WINENV_PREFIX" ]; then
+  WINENV_PREFIX_FILE="$(winenv-prefix-file)"
+  WINENV_PREFIX="$(winenv-prefix-file-read "$WINENV_PREFIX_FILE" || true)"
+fi
+
+if [ -z "$WINENV_PREFIX" ] || [ "$WINENV_PREFIX" = "system" ]; then
+  echo "system"
+  exit
+fi
+
+prefix_exists() {
+  local prefix="$1"
+  #[ -d "${WINENV_ROOT}/prefix/${prefix}" ]
+  [ -d "${prefix}" ]
+}
+
+if prefix_exists "$WINENV_PREFIX"; then
+  echo "$WINENV_PREFIX"
+else
+  echo "winenv: prefix \`$WINENV_PREFIX' is not installed" >&2
+  exit 1
+fi

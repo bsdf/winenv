@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# Summary: Install the latest winetricks
+#
+# Usage: winenv winetricks
+#        winenv winetricks --global
+#        winenv winetricks --local
+# Installs the latest winetricks globally or locally (--global by default)
+#
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+if [ -z "$WINENV_ROOT" ]; then
+    WINENV_ROOT="${HOME}/.winenv"
+fi
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+    exit 0
+fi
+
+usage() {
+  # We can remove the sed fallback once winenv 0.4.0 is widely available.
+  winenv-help install-winetricks 2>/dev/null || sed -ne '/^#/!q;s/.//;s/.//;1,4d;p' < "$0"
+  [ -z "$1" ] || exit "$1"
+}
+
+LOWER_DIR="$($READLINK -f "$1")"
+UPPER_DIR="$($READLINK -f "$2")"
+MERGED_DIR="$($READLINK -f "$3")"
+
+WORK_DIR="$UPPER_DIR/.overlay-work"
+mkdir -p "$WORK_DIR"
+
+fuse-overlayfs \
+    -o lowerdir="$LOWER_DIR" \
+    -o upperdir="$UPPER_DIR" \
+    -o workdir="$WORK_DIR"   \
+    "$MERGED_DIR"
