@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+#
+# Summary: Create new wine-prefix in current dir and set wine version
+#
+# Usage: winenv new [--wine-version|-v version] [--prefix|-p prefix] [--dxvk|-d]
+#                   [--no-init|-n] [--windows-version|-w version]
+#
+set -e
+[ -n "$WINENV_DEBUG" ] && set -x
+
+if [ -z "$WINENV_ROOT" ]; then
+    WINENV_ROOT="${HOME}/.winenv"
+fi
+
+# Provide winenv completions
+if [ "$1" = "--complete" ]; then
+    exit 0
+fi
+
+eval set -- "$(getopt -l "wine-version:,prefix:,dxvk,no-init,windows-version:" -o "v:p:dnw:" -- "$@")"
+while :
+do
+    case "$1" in
+        -v | --wine-version)
+            WINE_VERSION="$2"
+            shift 2
+            ;;
+        -p | --prefix)
+            PREFIX_FOLDER="$2"
+            shift 2
+            ;;
+        -d | --dxvk)
+            INSTALL_DXVK=1
+            shift
+            ;;
+        -n | --no-init)
+            NO_INIT=1
+            shift
+            ;;
+        -w | --windows-version)
+            WINDOWS_VERSION="$2"
+            shift 2
+            ;;
+        --) shift
+            break
+            ;;
+        *)  exit 1
+            ;;
+    esac
+done
+
+WINE_VERSION="${WINE_VERSION:-$(winenv-global)}"
+PREFIX_FOLDER="${PREFIX_FOLDER:-wine-prefix}"
+WINDOWS_VERSION="${WINDOWS_VERSION:-win10}"
+
+mkdir -p "$PREFIX_FOLDER"
+winenv-prefix--local "$PREFIX_FOLDER"
+winenv-local "$WINE_VERSION"
+
+if [ ! "$NO_INIT" ]; then
+    winenv-exec "winecfg" -v "$WINDOWS_VERSION"
+fi
+
+if [ "$INSTALL_DXVK" ]; then
+    echo "TODO: install dxvk..."
+fi
